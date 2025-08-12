@@ -3,6 +3,7 @@ from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_huggingface import HuggingFaceEmbeddings
 from dotenv import load_dotenv
+import pickle
 import os
 
 load_dotenv()
@@ -10,7 +11,8 @@ history = []
 
 # ---------------- Load prebuilt FAISS index ----------------
 embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
-vector_store = FAISS.load_local("my_faiss_index", embeddings, allow_dangerous_deserialization=True)
+with open("my_faiss_index.pkl", "rb") as f:
+    vector_store = pickle.load(f)
 retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
 # ------------------------------------------------------------
 
@@ -60,3 +62,4 @@ def get_bot_response(user_input: str) -> str:
 # Test run
 if __name__ == "__main__":
     get_bot_response("who is shyam?")
+
