@@ -1,7 +1,5 @@
 fastapi
 uvicorn
-torch==2.2.0+cpu --extra-index-url https://download.pytorch.org/whl/cpu
-pickle
 langchain
 langchain-community
 langchain-core
@@ -11,5 +9,3 @@ huggingface_hub
 sentence-transformers
 faiss-cpu
 python-dotenv
-
-
