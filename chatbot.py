@@ -3,23 +3,28 @@ from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_huggingface import HuggingFaceEmbeddings
 from dotenv import load_dotenv
-import pickle
 import os
 
 load_dotenv()
 history = []
 
 # ---------------- Load prebuilt FAISS index ----------------
-embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
-with open("my_faiss_index.pkl", "rb") as f:
-    vector_store = pickle.load(f)
+# Using the smallest HuggingFace embedding model to save memory
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+vector_store = FAISS.load_local(
+    "my_faiss_index",
+    embeddings,
+    allow_dangerous_deserialization=True
+)
+
 retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
 # ------------------------------------------------------------
 
 # ---------------- Groq LLM configuration -------------------
 model = ChatGroq(
     groq_api_key=os.getenv("GROQ_API_KEY"),
-    model_name="llama-3.1-8b-instant",  # Options: llama3-8b-8192, llama3-70b-8192, gemma-7b-it
+    model_name="llama-3.1-8b-instant",  # Other options: llama3-8b-8192, llama3-70b-8192, gemma-7b-it
     temperature=0.7,
     max_tokens=512
 )
@@ -29,9 +34,10 @@ model = ChatGroq(
 prompt = PromptTemplate(
     template="""
       You are a helpful representative of the company= (auto-pilot-verse), named - alex.
-      Answer very shortely and give ans only the user has asked for and dont answer anything other he asked and ONLY from the provided transcript context. 
+      Answer very shortly and only provide what the user asked for.
+      ONLY use the provided transcript context.
       Don't introduce yourself unless explicitly asked.
-      If the context is insufficient, give a friendly message accordingly.
+      If the context is insufficient, reply with a friendly fallback message.
 
       {context}
       Question: {question}
@@ -46,14 +52,14 @@ def reset_history():
 
 def get_bot_response(user_input: str) -> str:
     history_text = "\n".join([f"User: {u}\nBot: {b}" for u, b in history])
-    
+
     # Retrieve context from FAISS
     docs = vector_store.similarity_search(user_input, k=3)
     context = "\n".join([doc.page_content for doc in docs])
-    
+
     combined_context = f"Conversation so far:\n{history_text}\n\nRelevant documents:\n{context}"
     final_prompt = prompt.format(context=combined_context, question=user_input)
-    
+
     ans = model.invoke(final_prompt).content
     history.append((user_input, ans))
     print(ans)
@@ -62,4 +68,3 @@ def get_bot_response(user_input: str) -> str:
 # Test run
 if __name__ == "__main__":
     get_bot_response("who is shyam?")
-
