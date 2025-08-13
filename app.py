@@ -27,16 +27,23 @@ def health_check():
 
 @app.post("/chat")
 async def chat(request: ChatRequest):
-    if request.reset:
-        reset_history()
-        return {"reply": "History cleared."}
-    reply = get_bot_response(request.message)
-    return {"reply": reply}
+    try:
+        if request.reset:
+            reset_history()
+            return {"reply": "History cleared."}
+        
+        print(f"Processing message: {request.message}")
+        reply = get_bot_response(request.message)
+        return {"reply": reply}
+    except Exception as e:
+        print(f"Error processing message: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
+        return {"reply": f"Sorry, I encountered an error: {str(e)}", "error": True}
 
-
-
+@app.on_event("shutdown")
+def shutdown_event():
+    print("Application shutting down")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-

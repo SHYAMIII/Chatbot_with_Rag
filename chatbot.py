@@ -28,9 +28,9 @@ def load_resources():
         return  # Already loaded
     
     print("Loading Pinecone...")
-    pinecone.init(
-        api_key=os.getenv("PINECONE_API_KEY"),
-        environment=os.getenv("PINECONE_ENVIRONMENT")
+    # Pinecone v4 initialization - use Pinecone class instead of init()
+    pc = pinecone.Pinecone(
+        api_key=os.getenv("PINECONE_API_KEY")
     )
     
 
@@ -46,6 +46,7 @@ def load_resources():
     vector_store = PineconeVectorStore(
         index_name="chatbotapv",
         embedding=embeddings,
+        client=pc  # Pass the Pinecone client instance
     )
 
     print("Loading retriever...")
