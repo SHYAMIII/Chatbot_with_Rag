@@ -1,3 +1,4 @@
+# chatbot.py
 from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
@@ -8,29 +9,38 @@ import os
 load_dotenv()
 history = []
 
-# ---------------- Load prebuilt FAISS index ----------------
-# Using the smallest HuggingFace embedding model to save memory
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# These will load only when first needed
+embeddings = None
+vector_store = None
+retriever = None
+model = None
 
-vector_store = FAISS.load_local(
-    "my_faiss_index",
-    embeddings,
-    allow_dangerous_deserialization=True
-)
+def load_resources():
+    """Lazy-loads heavy models only when first needed."""
+    global embeddings, vector_store, retriever, model
 
-retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
-# ------------------------------------------------------------
+    if embeddings is not None:
+        return  # Already loaded
 
-# ---------------- Groq LLM configuration -------------------
-model = ChatGroq(
-    groq_api_key=os.getenv("GROQ_API_KEY"),
-    model_name="llama-3.1-8b-instant",  # Other options: llama3-8b-8192, llama3-70b-8192, gemma-7b-it
-    temperature=0.7,
-    max_tokens=512
-)
-# ------------------------------------------------------------
+    print("Loading embeddings and FAISS index...")
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-# ---------------- Prompt template --------------------------
+    vector_store = FAISS.load_local(
+        "my_faiss_index",
+        embeddings,
+        allow_dangerous_deserialization=True
+    )
+
+    retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
+
+    print("Loading Groq model...")
+    model = ChatGroq(
+        groq_api_key=os.getenv("GROQ_API_KEY"),
+        model_name="llama-3.1-8b-instant",
+        temperature=0.7,
+        max_tokens=512
+    )
+
 prompt = PromptTemplate(
     template="""
       You are a helpful representative of the company= (auto-pilot-verse), named - alex.
@@ -44,16 +54,17 @@ prompt = PromptTemplate(
     """,
     input_variables=['context', 'question']
 )
-# ------------------------------------------------------------
 
 def reset_history():
     global history
     history = []
 
 def get_bot_response(user_input: str) -> str:
+    load_resources()  # Only load models when first needed
+
     history_text = "\n".join([f"User: {u}\nBot: {b}" for u, b in history])
 
-    # Retrieve context from FAISS
+    # Retrieve context
     docs = vector_store.similarity_search(user_input, k=3)
     context = "\n".join([doc.page_content for doc in docs])
 
@@ -62,9 +73,4 @@ def get_bot_response(user_input: str) -> str:
 
     ans = model.invoke(final_prompt).content
     history.append((user_input, ans))
-    print(ans)
     return ans
-
-# Test run
-if __name__ == "__main__":
-    get_bot_response("who is shyam?")
