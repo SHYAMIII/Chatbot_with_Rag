@@ -33,10 +33,10 @@ async def chat(request: ChatRequest):
     reply = get_bot_response(request.message)
     return {"reply": reply}
 
-@app.on_event("shutdown")
-def shutdown_event():
-    print("Application shutting down")
+
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
