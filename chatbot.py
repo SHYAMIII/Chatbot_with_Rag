@@ -1,11 +1,13 @@
-# chatbot.py
+import os
+os.environ["HF_HOME"] = "/data"
+
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from dotenv import load_dotenv
 from langchain_pinecone import PineconeVectorStore
 import pinecone
-import os
+
 
 
 
@@ -44,13 +46,13 @@ def load_resources():
 
     print("Loading retriever...")
 
-    # retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
+    # retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 3})
 
     print("Loading Groq model...")
     model = ChatGroq(
         groq_api_key=os.getenv("GROQ_API_KEY"),
         model_name="llama-3.1-8b-instant",
-        temperature=0.7,
+        temperature=0.5,
         max_tokens=512
     )
 
@@ -78,7 +80,7 @@ def get_bot_response(user_input: str) -> str:
     history_text = "\n".join([f"User: {u}\nBot: {b}" for u, b in history])
 
     # Retrieve context
-    docs = vector_store.similarity_search(user_input, k=2)
+    docs = vector_store.similarity_search(user_input, k=3)
     context = "\n".join([doc.page_content for doc in docs])
 
     combined_context = f"Conversation so far:\n{history_text}\n\nRelevant documents:\n{context}"

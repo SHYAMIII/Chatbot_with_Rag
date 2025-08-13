@@ -21,7 +21,12 @@ class ChatRequest(BaseModel):
     message: str
     reset: bool = False
 
- 
+
+@app.get("/")
+async def root():
+    return {"status": "ok", "message": "API is running"}
+
+
 @app.post("/chat")
 async def chat(request: ChatRequest):
     if request.reset:
@@ -33,5 +38,5 @@ async def chat(request: ChatRequest):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
