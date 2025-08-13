@@ -1,12 +1,10 @@
-fastapi
-langchain_huggingface
-uvicorn
-pydantic
-python-dotenv
-langchain-core
-langchain-community
-langchain-groq
-langchain-pinecone
-sentence-transformers
-pinecone-client
-
+fastapi==0.116.1
+uvicorn==0.35.0
+langchain-community==0.2.1
+langchain-groq==0.3.7
+langchain-pinecone==0.2.11  # Updated to latest available version
+pinecone-client==4.1.0
+sentence-transformers==3.0.1
+python-dotenv==1.1.1
+pydantic==2.11.7
+httpx==0.28.1

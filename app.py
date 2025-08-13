@@ -21,6 +21,10 @@ class ChatRequest(BaseModel):
     message: str
     reset: bool = False
 
+@app.get("/")
+def health_check():
+    return {"status": "ok", "message": "Chatbot API is running"}
+
 @app.post("/chat")
 async def chat(request: ChatRequest):
     if request.reset:
@@ -28,6 +32,12 @@ async def chat(request: ChatRequest):
         return {"reply": "History cleared."}
     reply = get_bot_response(request.message)
     return {"reply": reply}
+
+@app.on_event("shutdown")
+def shutdown_event():
+    import pinecone
+    pinecone.deinit()
+    print("Pinecone connection closed")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))

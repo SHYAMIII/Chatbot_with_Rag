@@ -1,16 +1,18 @@
 # chatbot.py
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from dotenv import load_dotenv
+from langchain_pinecone import PineconeVectorStore
+import pinecone
 import os
 
-from langchain_pinecone import PineconeVectorStore
-from langchain_community.vectorstores import Pinecone  # Fallback import
 
 
 load_dotenv()
 history = []
+
+
 
 # These will load only when first needed
 embeddings = None
@@ -24,8 +26,15 @@ def load_resources():
 
     if embeddings is not None:
         return  # Already loaded
+    
+    print("Loading Pinecone...")
+    pinecone.init(
+        api_key=os.getenv("PINECONE_API_KEY"),
+        environment=os.getenv("PINECONE_ENVIRONMENT")
+    )
+    
 
-    print("Loading embeddings and FAISS index...")
+    print("Loading embeddings")
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
         model_kwargs={'device': 'cpu'},
