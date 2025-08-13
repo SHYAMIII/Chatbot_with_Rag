@@ -35,9 +35,7 @@ async def chat(request: ChatRequest):
 
 @app.on_event("shutdown")
 def shutdown_event():
-    import pinecone
-    pinecone.deinit()
-    print("Pinecone connection closed")
+    print("Application shutting down")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
