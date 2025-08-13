@@ -5,6 +5,7 @@ from chatbot import get_bot_response, reset_history
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
+import traceback
 
 app = FastAPI()
 
@@ -34,15 +35,15 @@ async def chat(request: ChatRequest):
         
         print(f"Processing message: {request.message}")
         reply = get_bot_response(request.message)
+        print(f"Bot response: {reply}")
+        print(f"Response type: {type(reply)}")
         return {"reply": reply}
     except Exception as e:
         print(f"Error processing message: {str(e)}")
         print(f"Traceback: {traceback.format_exc()}")
         return {"reply": f"Sorry, I encountered an error: {str(e)}", "error": True}
 
-@app.on_event("shutdown")
-def shutdown_event():
-    print("Application shutting down")
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))

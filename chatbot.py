@@ -1,7 +1,7 @@
 # chatbot.py
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from dotenv import load_dotenv
 from langchain_pinecone import PineconeVectorStore
 import pinecone
@@ -45,8 +45,7 @@ def load_resources():
 
     vector_store = PineconeVectorStore(
         index_name="chatbotapv",
-        embedding=embeddings,
-        client=pc  # Pass the Pinecone client instance
+        embedding=embeddings
     )
 
     print("Loading retriever...")
@@ -80,17 +79,31 @@ def reset_history():
     history = []
 
 def get_bot_response(user_input: str) -> str:
-    load_resources()  # Only load models when first needed
+    try:
+        print("Starting get_bot_response...")
+        load_resources()  # Only load models when first needed
+        print("Resources loaded successfully")
 
-    history_text = "\n".join([f"User: {u}\nBot: {b}" for u, b in history])
+        history_text = "\n".join([f"User: {u}\nBot: {b}" for u, b in history])
+        print(f"History text: {history_text}")
 
-    # Retrieve context
-    docs = vector_store.similarity_search(user_input, k=2)
-    context = "\n".join([doc.page_content for doc in docs])
+        # Retrieve context
+        print("Retrieving context from Pinecone...")
+        docs = vector_store.similarity_search(user_input, k=2)
+        context = "\n".join([doc.page_content for doc in docs])
+        print(f"Retrieved context: {context}")
 
-    combined_context = f"Conversation so far:\n{history_text}\n\nRelevant documents:\n{context}"
-    final_prompt = prompt.format(context=combined_context, question=user_input)
+        combined_context = f"Conversation so far:\n{history_text}\n\nRelevant documents:\n{context}"
+        final_prompt = prompt.format(context=combined_context, question=user_input)
+        print(f"Final prompt: {final_prompt}")
 
-    ans = model.invoke(final_prompt).content
-    history.append((user_input, ans))
-    return ans
+        print("Invoking Groq model...")
+        ans = model.invoke(final_prompt).content
+        print(f"Model response: {ans}")
+        
+        history.append((user_input, ans))
+        print(f"Response added to history. Total history length: {len(history)}")
+        return ans
+    except Exception as e:
+        print(f"Error in get_bot_response: {str(e)}")
+        raise e
