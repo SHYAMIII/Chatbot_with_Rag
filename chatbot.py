@@ -1,10 +1,13 @@
 # chatbot.py
-from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_huggingface import HuggingFaceEmbeddings
 from dotenv import load_dotenv
 import os
+
+from langchain_pinecone import PineconeVectorStore
+from langchain_community.vectorstores import Pinecone  # Fallback import
+
 
 load_dotenv()
 history = []
@@ -23,13 +26,20 @@ def load_resources():
         return  # Already loaded
 
     print("Loading embeddings and FAISS index...")
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-
-    vector_store = FAISS.load_local(
-        "my_faiss_index",
-        embeddings,
-        allow_dangerous_deserialization=True
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        model_kwargs={'device': 'cpu'},
+        encode_kwargs={'normalize_embeddings': True}
     )
+
+    print("Loading Pinecone index...")
+
+    vector_store = PineconeVectorStore(
+        index_name="chatbotapv",
+        embedding=embeddings,
+    )
+
+    print("Loading retriever...")
 
     retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
 
@@ -65,7 +75,7 @@ def get_bot_response(user_input: str) -> str:
     history_text = "\n".join([f"User: {u}\nBot: {b}" for u, b in history])
 
     # Retrieve context
-    docs = vector_store.similarity_search(user_input, k=3)
+    docs = vector_store.similarity_search(user_input, k=2)
     context = "\n".join([doc.page_content for doc in docs])
 
     combined_context = f"Conversation so far:\n{history_text}\n\nRelevant documents:\n{context}"
