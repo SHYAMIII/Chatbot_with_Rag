@@ -5,7 +5,6 @@ from chatbot import get_bot_response, reset_history
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
-import traceback
 
 app = FastAPI()
 
@@ -22,26 +21,14 @@ class ChatRequest(BaseModel):
     message: str
     reset: bool = False
 
-@app.get("/")
-def health_check():
-    return {"status": "ok", "message": "Chatbot API is running"}
-
+ 
 @app.post("/chat")
 async def chat(request: ChatRequest):
-    try:
-        if request.reset:
-            reset_history()
-            return {"reply": "History cleared."}
-        
-        print(f"Processing message: {request.message}")
-        reply = get_bot_response(request.message)
-        print(f"Bot response: {reply}")
-        print(f"Response type: {type(reply)}")
-        return {"reply": reply}
-    except Exception as e:
-        print(f"Error processing message: {str(e)}")
-        print(f"Traceback: {traceback.format_exc()}")
-        return {"reply": f"Sorry, I encountered an error: {str(e)}", "error": True}
+    if request.reset:
+        reset_history()
+        return {"reply": "History cleared."}
+    reply = get_bot_response(request.message)
+    return {"reply": reply}
 
 
 
